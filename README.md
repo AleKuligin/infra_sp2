@@ -6,67 +6,85 @@ API сервиса YaMDB .
 
 ### Как запустить проект:
 
-Клонировать репозиторий и перейти в него в командной строке:
+##### 1. Клонировать репозиторий
 
 ```
-git clone
+git clone <адрес репозитория>
 ```
 
-```
-cd api_yamdb
-```
+##### 2. При необходимости установить Docker
 
-Cоздать и активировать виртуальное окружение:
+Инструкция для Linux
 
 ```
-python3 -m venv venv
+sudo apt install curl
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+sudo apt update
+
+sudo apt install \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg-agent \
+  software-properties-common -y 
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+sudo apt update
+
+sudo apt install docker-ce docker-compose -y
 ```
 
-```
-source venv/bin/activate
-```
+##### 3. Создать .env файл
+
+env-файл необходимо создать по шаблону ниже и разместить в папку проекта api_yamdb (где лежит Dockerfile)
+
+Имя пользователя, пароль и секретный ключ django нужно указать свои! 
 
 ```
-python3 -m pip install --upgrade pip
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+DB_HOST=db
+DB_PORT=5432
+SECRET_KEY= # секретный ключ django
 ```
 
-Установить зависимости из файла requirements.txt:
-
+##### 4. Запустить приложения в контейнерах
+Запускается из места расположения файла docker-compose.yaml: /infra/
 ```
-pip install -r requirements.txt
-```
-
-Выполнить миграции:
-
-```
-python3 manage.py migrate
+sudo docker-compose up -d --build
 ```
 
-Запустить проект:
+##### 5. Создать суперюзера и заполнить базу данными.
 
 ```
-python3 manage.py runserver
-```
-### шаблон наполнения env-файла
+sudo docker-compose exec web python manage.py migrate
 
-```
-DB_ENGINE=django.db.backends.postgresql # указываем, что работаем с postgresql
-DB_NAME=postgres # имя базы данных
-POSTGRES_USER=postgres # логин для подключения к базе данных
-POSTGRES_PASSWORD=postgres # пароль для подключения к БД (установите свой)
-DB_HOST=db # название сервиса (контейнера)
-DB_PORT=5432 # порт для подключения к БД 
+sudo docker-compose exec web python manage.py createsuperuser
+
+sudo docker-compose exec web python manage.py collectstatic --no-input
 ```
 
-### команда для запуска приложения в контейнерах
+##### 6. Использование приложения
+
+После выполнения указаных шагов проект будет запущен в контейнере, раздел администрирования будет доступен в браузере по адресу http://127.0.0.1/admin/. 
+
+При необходимости контейнеры можно остановить и заново запустить без потери данных следующими командами:
 
 ```
-docker-compose up -d --build
+sudo docker-compose stop
+
+sudo docker-compose start
 ```
-### команды для заполнения базы данными.
+
+Удалить контейнеры можно командой:
 
 ```
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py createsuperuser
-docker-compose exec web python manage.py collectstatic --no-input
+sudo docker-compose down -v 
 ```
